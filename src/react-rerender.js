@@ -34,6 +34,16 @@ class Storage extends EventEmitter {
           isAsc: true
         }
       }
+      this.rows = this.rows.sort(
+        (l, r) => {
+          var {key, isAsc} = this.sortBy,
+              res,
+              mul = isAsc ? 1 : -1;
+          if (l[key] > r[key]) { res = 1; }
+          else if (l[key] === r[key]) { res = 0; }
+          else { res = -1; }
+          return res * mul;
+      });
       this.emit('change')
     }
     removeHandler(id) {
@@ -59,6 +69,22 @@ class HeadCell extends React.Component {
   }
 }
 
+class Row extends React.Component {
+  render() {
+    var {el, handler} = this.props;
+    return (
+    <tr>
+      <td scope='row'>{el.id}</td>
+      <td>{el.firstName}</td>
+      <td>{el.lastName}</td>
+      <td>{el.phone}</td>
+      <td><span 
+            onClick={handler}
+            className="btn btn-danger">x</span></td>
+    </tr>
+    )
+  }
+}
 class Table extends React.Component {
   constructor(props) {
     super(props);
@@ -91,17 +117,6 @@ class Table extends React.Component {
           <HeadCell sortBy={sortBy} handler={sortHandler.bind(undefined, id)} key={id} keyId={id}>{name}</HeadCell>
         )
       })
-    rows = rows.sort(
-      (l, r) => {
-        var {key, isAsc} = sortBy,
-            res,
-            mul = isAsc ? 1 : -1;
-        if (l[key] > r[key]) { res = 1; }
-        else if (l[key] === r[key]) { res = 0; }
-        else { res = -1; }
-        return res * mul;
-      }
-    );
     return (
       <div className={'container'}>
           <h2>React</h2>
@@ -112,16 +127,12 @@ class Table extends React.Component {
             <tbody>
               {
                 rows.map(function(el) {
+                  
                   return (
-                    <tr key={el.id}>
-                      <td scope='row'>{el.id}</td>
-                      <td>{el.firstName}</td>
-                      <td>{el.lastName}</td>
-                      <td>{el.phone}</td>
-                      <td><span 
-                            onClick={removeHandler.bind(undefined, el.id)}
-                            className="btn btn-danger">x</span></td>
-                    </tr>
+                    <Row key={el.id}
+                      handler={removeHandler.bind(undefined, el.id)}
+                      el={el}
+                    />
                   )
                 })
               }
