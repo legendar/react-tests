@@ -15,15 +15,13 @@ class Storage extends EventEmitter {
     constructor(size){
         super()
         this.rows = Array.apply(null, {length: size}).map(this.generateRow);
-    }
-    getState() {
-      return {
-        rows: this.rows,
-        sortBy: {
+        this.sortBy = {
           key: 'firstName',
           isAsc: true
         }
-      }
+    }
+    getState() {
+      return { rows: this.rows, sortBy: this.sortBy}
     }
 
     generateRow(el, i){
@@ -35,6 +33,18 @@ class Storage extends EventEmitter {
         };
     }
     
+    sortHandler(key) {
+      alert(key);
+      if (this.sortBy.key === key) {
+        this.sortBy.isAsc = !this.sortBy.isAsc;
+      } else {
+        this.sortBy = {
+          key: key,
+          isAsc: true
+        }
+      }
+      this.emit('change')
+    }
 }
 
 class HeadCell extends React.Component {
@@ -46,7 +56,7 @@ class HeadCell extends React.Component {
         span = <span className={`glyphicon glyphicon-chevron-${direction}`}/>
     }
     return (
-      <th>
+      <th onClick={handler}>
         {children}
         {span}
       </th>
@@ -62,7 +72,7 @@ class Table extends React.Component {
 
   _onChange() {
     var {store} = this.props
-    this.setState = store.getState()
+    this.setState(store.getState())
   }
 
   componentDidMount() {
@@ -74,17 +84,37 @@ class Table extends React.Component {
 
   render() {
     var {sortBy, rows} = this.state;
+    var sortHandler = this.props.store.sortHandler.bind(this.props.store)
+    var headers = [
+        ['id', '#'],
+        ['firstName','First Name'],
+        ['lastName', 'Last Name'],
+        ['phone', 'Phone'],
+      ].map(function([id, name]){
+        return (
+          <HeadCell sortBy={sortBy} handler={sortHandler.bind(undefined, id)} key={id} keyId={id}>{name}</HeadCell>
+        )
+      })
+    rows = rows.sort(
+      (l, r) => {
+        var {key, isAsc} = sortBy,
+            res,
+            mul = isAsc ? 1 : -1;
+        if (l[key] > r[key]) { res = 1; }
+        else if (l[key] === r[key]) { res = 0; }
+        else { res = -1; }
+        return res * mul;
+      }
+    );
     return (
       <div className={'container'}>
         <div className={'col-lg-offset-3 col-lg-6'}>
           <table className={'table'}>
             <thead>
-              <HeadCell sortBy={sortBy} keyId={'id'}>#</HeadCell>
-              <HeadCell sortBy={sortBy} keyId={'firstName'}>First Name</HeadCell>
-              <HeadCell sortBy={sortBy} keyId={'lastName'}>Last Name</HeadCell>
-              <HeadCell sortBy={sortBy} keyId={'phone'}>Phone</HeadCell>
+            {headers}
             </thead>
             <tbody>
+              
               {
                 rows.map(function(el) {
                   return (
@@ -106,6 +136,6 @@ class Table extends React.Component {
 }
 
 React.render(
-    <Table store={new Storage(10000)}/>,
+    <Table store={new Storage(10)}/>,
     document.body
 );
