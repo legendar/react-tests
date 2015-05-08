@@ -1,15 +1,7 @@
 var React = require('react'),
-    {EventEmitter} = require('events');
-
-function guid() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
-}
+    {EventEmitter} = require('events'),
+    Chance  = require('Chance');
+var chance = new Chance()
 
 class Storage extends EventEmitter {
     constructor(size){
@@ -26,15 +18,14 @@ class Storage extends EventEmitter {
 
     generateRow(el, i){
         return {
-            id: i,
-            firstName: `Name${guid()}`,
-            lastName: `Last${guid()}`,
-            phone: `${guid()}`
-        };
+          id: i,
+          firstName: chance.first(),
+          lastName: chance.last(),
+          phone: chance.phone()
+        }
     }
     
     sortHandler(key) {
-      alert(key);
       if (this.sortBy.key === key) {
         this.sortBy.isAsc = !this.sortBy.isAsc;
       } else {
@@ -118,7 +109,7 @@ class Table extends React.Component {
               {
                 rows.map(function(el) {
                   return (
-                    <tr>
+                    <tr key={el.id}>
                       <th scope='row'>{el.id}</th>
                       <th>{el.firstName}</th>
                       <th>{el.lastName}</th>
@@ -136,6 +127,6 @@ class Table extends React.Component {
 }
 
 React.render(
-    <Table store={new Storage(10)}/>,
+    <Table store={new Storage(10000)}/>,
     document.body
 );
