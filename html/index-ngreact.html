@@ -6,6 +6,26 @@
     <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css">
 </head>
 <body>
-<script src='static/ngreact.js'></script>
+  <div class="container" ng-controller="TableListController">
+    <h2>ngReact</h2>
+    <table class="table">
+      <tr>
+        <th ng-click="resort('id')"><span class="btn btn-default">id</span></th>
+        <th ng-click="resort('name')"><span class="btn btn-default">name</span></th>
+        <th ng-click="resort('lastName')"><span class="btn btn-default">last name</span></th>
+        <th ng-click="resort('phone')"><span class="btn btn-default">phone</span></th>
+        <th></th>
+      </tr>
+      <tr ng-repeat="user in userList | orderBy:orderField">
+        <td>{{user.id}}</td>
+        <td>{{user.name}}</td>
+        <td>{{user.lastName}}</td>
+        <td>{{user.phone}}</td>
+        <td><span class="btn btn-danger" ng-click="removeItem(user)">x</span></td>
+      </tr>
+    </table>
+  </div>
+
+<script src='static/angular.js'></script>
 </body>
 </html>

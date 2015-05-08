@@ -1,6 +1,6 @@
 var React = require('react'),
     {EventEmitter} = require('events'),
-    Chance  = require('Chance');
+    Chance  = require('chance');
 var chance = new Chance()
 
 class Storage extends EventEmitter {
@@ -99,28 +99,27 @@ class Table extends React.Component {
     );
     return (
       <div className={'container'}>
-        <div className={'col-lg-offset-3 col-lg-6'}>
+          <h2>React</h2>
           <table className={'table'}>
             <thead>
             {headers}
             </thead>
             <tbody>
-              
               {
                 rows.map(function(el) {
                   return (
                     <tr key={el.id}>
-                      <th scope='row'>{el.id}</th>
-                      <th>{el.firstName}</th>
-                      <th>{el.lastName}</th>
-                      <th>{el.phone}</th>
+                      <td scope='row'>{el.id}</td>
+                      <td>{el.firstName}</td>
+                      <td>{el.lastName}</td>
+                      <td>{el.phone}</td>
+                      <td><span className="btn btn-danger">x</span></td>
                     </tr>
                   )
                 })
               }
             </tbody>
           </table>
-        </div>
       </div>
     )
 }
