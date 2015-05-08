@@ -6,6 +6,23 @@
     <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css">
 </head>
 <body>
+  <div class="container" ng-controller="TableListController as tableList">
+    <table class="table">
+      <tr>
+        <th ng-click="tableList.resort('id')">id</th>
+        <th ng-click="tableList.resort('name')">name</th>
+        <th ng-click="tableList.resort('lastName')">last name</th>
+        <th ng-click="tableList.resort('phone')">phone</th>
+      </tr>
+      <tr ng-repeat="user in tableList.userList | orderBy:tableList.orderField">
+        <td>{{user.id}}</td>
+        <td>{{user.name}}</td>
+        <td>{{user.lastName}}</td>
+        <td>{{user.phone}}</td>
+      </tr>
+    </table>
+  </div>
+
 <script src='static/angular.js'></script>
 </body>
 </html>
