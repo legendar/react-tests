@@ -1,5 +1,5 @@
-var react = require('React'),
-    {EventEmiter} = require('event');
+var React = require('react'),
+    {EventEmitter} = require('events');
 
 function guid() {
   function s4() {
@@ -13,81 +13,129 @@ function guid() {
 
 class Storage extends EventEmitter {
     constructor(size){
-        this.state = Array.apply(null, {length: size}).map(this.generateRow);
+        super()
+        this.rows = Array.apply(null, {length: size}).map(this.generateRow);
+        this.sortBy = {
+          key: 'firstName',
+          isAsc: true
+        }
+    }
+    getState() {
+      return { rows: this.rows, sortBy: this.sortBy}
     }
 
     generateRow(el, i){
         return {
             id: i,
             firstName: `Name${guid()}`,
-            lastName: `Last${guid()},
+            lastName: `Last${guid()}`,
             phone: `${guid()}`
+        };
+    }
+    
+    sortHandler(key) {
+      alert(key);
+      if (this.sortBy.key === key) {
+        this.sortBy.isAsc = !this.sortBy.isAsc;
+      } else {
+        this.sortBy = {
+          key: key,
+          isAsc: true
+        }
+      }
+      this.emit('change')
     }
 }
 
-class Table extends React.Component {
-    constructor(props) {
-      super(props);
+class HeadCell extends React.Component {
+  render() {
+    var span, direction,
+        {children, name, handler, sortBy, keyId} = this.props;
+    if(keyId === sortBy.key) {
+        direction = sortBy.isAsc ? 'down' : 'up';
+        span = <span className={`glyphicon glyphicon-chevron-${direction}`}/>
     }
-    render() {
-      var {items, changeSortingHandler, sortBy, removeHandler} = this.props;
-      var getHeadCell = (key, name) => {
-        var span;
-        if(key === sortBy.get('key')) {
-          var direction = sortBy.get('isAsc') ? 'down' : 'up';
-          span = D.span({
-            className: `glyphicon glyphicon-chevron-${direction}`
-          });
-        }
-        return D.th({onClick: _.partial(changeSortingHandler, key)}, name, span);
-      };
-      // TODO: refactor
-      var sorted = this.props.items.map(
-        (el, i) => _.extend(el.toObject(), {id: i})
-      ).sort(
-        (l, r) => {
-          var {key, isAsc} = sortBy.toObject(),
-              res,
-              mul = isAsc ? 1 : -1;
-          if (l[key] > r[key]) { res = 1; }
-          else if (l[key] === r[key]) { res = 0; }
-          else { res = -1; }
-          return res * mul;
-        }
-      );
-      var rows = sorted.map((el) => {
-          return D.tr(
-            {key: el.id},
-            D.th({scope: 'row'}, el.id),
-            D.td(null, el.firstName),
-            D.td(null, el.lastName),
-            D.td(null, el.phone),
-            D.td(
-              null,
-              D.span({
-                onClick: _.partial(removeHandler, el.id),
-                className: 'glyphicon glyphicon-remove-sign'
-              })
-            )
-          );
-      });
-      return D.table(
-        {className: 'table'},
-        D.thead(
-          null,
-          D.tr(
-            null,
-            getHeadCell('id', '#'),
-            getHeadCell('firstName', 'First Name'),
-            getHeadCell('lastName', 'Last Name'),
-            getHeadCell('phone', 'Phone'),
-            D.th(null, '')
-          )
-        ),
-        D.tbody(
-          null,
-          rows
-        )
-      );
-    }
+    return (
+      <th onClick={handler}>
+        {children}
+        {span}
+      </th>
+    )
+  }
 }
+
+class Table extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = props.store.getState()
+  }
+
+  _onChange() {
+    var {store} = this.props
+    this.setState(store.getState())
+  }
+
+  componentDidMount() {
+    this.props.store.addListener('change', this._onChange.bind(this));
+  }
+  componentWillUnmount() {
+    this.props.store.removeListener('change', this._onChange.bind(this));
+  } 
+
+  render() {
+    var {sortBy, rows} = this.state;
+    var sortHandler = this.props.store.sortHandler.bind(this.props.store)
+    var headers = [
+        ['id', '#'],
+        ['firstName','First Name'],
+        ['lastName', 'Last Name'],
+        ['phone', 'Phone'],
+      ].map(function([id, name]){
+        return (
+          <HeadCell sortBy={sortBy} handler={sortHandler.bind(undefined, id)} key={id} keyId={id}>{name}</HeadCell>
+        )
+      })
+    rows = rows.sort(
+      (l, r) => {
+        var {key, isAsc} = sortBy,
+            res,
+            mul = isAsc ? 1 : -1;
+        if (l[key] > r[key]) { res = 1; }
+        else if (l[key] === r[key]) { res = 0; }
+        else { res = -1; }
+        return res * mul;
+      }
+    );
+    return (
+      <div className={'container'}>
+        <div className={'col-lg-offset-3 col-lg-6'}>
+          <table className={'table'}>
+            <thead>
+            {headers}
+            </thead>
+            <tbody>
+              
+              {
+                rows.map(function(el) {
+                  return (
+                    <tr>
+                      <th scope='row'>{el.id}</th>
+                      <th>{el.firstName}</th>
+                      <th>{el.lastName}</th>
+                      <th>{el.phone}</th>
+                    </tr>
+                  )
+                })
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+}
+}
+
+React.render(
+    <Table store={new Storage(10)}/>,
+    document.body
+);
