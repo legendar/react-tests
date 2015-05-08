@@ -1,24 +1,22 @@
 var ng = require('angular'),
     Chance  = require('chance');
 
-var chance = new Chance(),
-    lastId = -1;
-
 ng.module('tableApp', [])
   .controller('TableListController', TableListController);
 
-function TableListController() {
-  this.userList = randomList(10000)
-  this.orderField = 'id'
-
-  console.log('wtf')
-
-  this.resort = (fieldName)=> {
-    this.orderField = fieldName
-    //console.log('sort by', fieldName)
-    //console.log(this.userList)
+function TableListController($scope) {
+  $scope.userList = randomList(2000)
+  $scope.orderField = 'id'
+  $scope.resort = (fieldName)=> $scope.orderField = fieldName
+  $scope.removeItem = (item)=> {
+    var index = $scope.userList.indexOf(item)
+    if(index > -1)
+      $scope.userList.splice(index, 1);
   }
 }
+
+var chance = new Chance(),
+    lastId = -1;
 
 function randomItem() {
   return {
@@ -32,6 +30,5 @@ function randomItem() {
 function randomList(length = 100) {
   return Array.apply(null, {length}).map(randomItem)
 }
-
 
 angular.bootstrap(document, ['tableApp']);
