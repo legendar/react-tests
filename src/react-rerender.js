@@ -36,6 +36,10 @@ class Storage extends EventEmitter {
       }
       this.emit('change')
     }
+    removeHandler(id) {
+      this.rows.splice(id, 1);
+      this.emit('change');
+    }
 }
 
 class HeadCell extends React.Component {
@@ -76,6 +80,7 @@ class Table extends React.Component {
   render() {
     var {sortBy, rows} = this.state;
     var sortHandler = this.props.store.sortHandler.bind(this.props.store)
+    var removeHandler = this.props.store.removeHandler.bind(this.props.store)
     var headers = [
         ['id', '#'],
         ['firstName','First Name'],
@@ -113,7 +118,9 @@ class Table extends React.Component {
                       <td>{el.firstName}</td>
                       <td>{el.lastName}</td>
                       <td>{el.phone}</td>
-                      <td><span className="btn btn-danger">x</span></td>
+                      <td><span 
+                            onClick={removeHandler.bind(undefined, el.id)}
+                            className="btn btn-danger">x</span></td>
                     </tr>
                   )
                 })
