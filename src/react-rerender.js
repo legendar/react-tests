@@ -1,19 +1,32 @@
 var React = require('react'),
     {EventEmitter} = require('events'),
+    _ = require('underscore'),
     Chance  = require('chance');
-var chance = new Chance()
+var chance = new Chance();
+React.addons = window.addons = require('react-addons');
+window.React = React;
+
+var debug = window.logs = require('debug'),
+    log = debug('main'),
+    rlog = debug('render'),
+    slog = debug('storage');
 
 class Storage extends EventEmitter {
     constructor(size){
         super()
-        this.rows = Array.apply(null, {length: size}).map(this.generateRow);
+        this.rows = Array.apply(null, {length: size}).map(this.generateRow.bind(this));
         this.sortBy = {
           key: 'firstName',
           isAsc: true
         }
+        slog('constructor')
+
+        // there should be separate dispatcher class (FLUX-way)
+        this.addListener('remove-item', (i)=> this.removeHandler(i))
     }
     getState() {
-      return { rows: this.rows, sortBy: this.sortBy}
+      slog('get state cloned')
+      return { rows: JSON.parse(JSON.stringify(this.rows)), sortBy: this.sortBy}
     }
 
     generateRow(el, i){
@@ -21,10 +34,12 @@ class Storage extends EventEmitter {
           id: i,
           firstName: chance.first(),
           lastName: chance.last(),
-          phone: chance.phone()
+          phone: chance.phone(),
+          //removeHandler: this.removeHandler.bind(this, i)
         }
+        slog('generate row')
     }
-    
+
     sortHandler(key) {
       if (this.sortBy.key === key) {
         this.sortBy.isAsc = !this.sortBy.isAsc;
@@ -45,15 +60,24 @@ class Storage extends EventEmitter {
           return res * mul;
       });
       this.emit('change')
+      slog('sort controller')
     }
     removeHandler(id) {
-      this.rows.splice(id, 1);
+      slog('remove handler start')
+      var item = _(this.rows).findWhere({id: id})
+      var index = this.rows.indexOf(item)
+      if(index >= 0) {
+        this.rows.splice(index, 1);
+        slog('remove handler before emit')
+      }
       this.emit('change');
+      slog('remove handler end')
     }
 }
 
 class HeadCell extends React.Component {
   render() {
+    rlog('head cell render')
     var span, direction,
         {children, name, handler, sortBy, keyId} = this.props;
     if(keyId === sortBy.key) {
@@ -71,17 +95,31 @@ class HeadCell extends React.Component {
 
 class Row extends React.Component {
   render() {
-    var {el, handler} = this.props;
+    rlog('row render')
+    var {number, firstName, lastName, phone, handler} = this.props;
     return (
-    <tr>
-      <td scope='row'>{el.id}</td>
-      <td>{el.firstName}</td>
-      <td>{el.lastName}</td>
-      <td>{el.phone}</td>
-      <td><span 
-            onClick={handler}
-            className="btn btn-danger">x</span></td>
-    </tr>
+      <tr>
+        <td scope='row'>{number}</td>
+        <td>{firstName}</td>
+        <td>{lastName}</td>
+        <td>{phone}</td>
+        <td><span
+              onClick={this.handleRemove.bind(this)}
+              className="btn btn-danger">x</span></td>
+      </tr>
+    )
+  }
+
+  handleRemove(e) {
+    dispatcher.emit('remove-item', this.props.number)
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    return (
+      this.props.number != nextProps.number ||
+      this.props.firstName != nextProps.firstName ||
+      this.props.lastName != nextProps.lastName ||
+      this.props.phone != nextProps.phone
     )
   }
 }
@@ -89,11 +127,14 @@ class Table extends React.Component {
   constructor(props) {
     super(props);
     this.state = props.store.getState()
+    window.store = props.store;
   }
 
   _onChange() {
+    rlog('onChange start')
     var {store} = this.props
     this.setState(store.getState())
+    rlog('onChange end')
   }
 
   componentDidMount() {
@@ -101,13 +142,14 @@ class Table extends React.Component {
   }
   componentWillUnmount() {
     this.props.store.removeListener('change', this._onChange.bind(this));
-  } 
+  }
 
   render() {
+    rlog('main render')
     var {sortBy, rows} = this.state;
     var sortHandler = this.props.store.sortHandler.bind(this.props.store)
     var removeHandler = this.props.store.removeHandler.bind(this.props.store)
-    var headers = [
+    /*var headers = [
         ['id', '#'],
         ['firstName','First Name'],
         ['lastName', 'Last Name'],
@@ -116,24 +158,17 @@ class Table extends React.Component {
         return (
           <HeadCell sortBy={sortBy} handler={sortHandler.bind(undefined, id)} key={id} keyId={id}>{name}</HeadCell>
         )
-      })
+      })*/
     return (
       <div className={'container'}>
           <h2>React</h2>
           <table className={'table'}>
             <thead>
-            {headers}
             </thead>
             <tbody>
               {
                 rows.map(function(el) {
-                  
-                  return (
-                    <Row key={el.id}
-                      handler={removeHandler.bind(undefined, el.id)}
-                      el={el}
-                    />
-                  )
+                  return <Row phone={el.phone} firstName={el.firstName} lastName={el.lastName} number={el.id} key={el.id} />
                 })
               }
             </tbody>
@@ -143,7 +178,10 @@ class Table extends React.Component {
 }
 }
 
+var storage = new Storage(10000);
+var dispatcher = storage;
+
 React.render(
-    <Table store={new Storage(10000)}/>,
+    <Table store={storage}/>,
     document.body
 );
